@@ -1,0 +1,1230 @@
+---
+title: "Exploratory Analysis Plots"
+author: 'Qianhe Peng (PID: 730003665)'
+date: "11/14/2017"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+library(tidyverse)
+library(dplyr)
+library(modelr)
+library(ggplot2)
+```
+
+*read data*
+```{r}
+med_cost <- read.csv("final_project_data.csv")
+head(med_cost)
+summary(med_cost)
+```
+
+*select out all the variables we need for the data set, assign it to med_cost*
+```{r}
+med_cost <- select(med_cost, DRG.Definition, Provider.Name, Provider.City, Provider.State, Hospital.Referral.Region.Description, Total.Discharges, Average.Covered.Charges,  Average.Total.Payments, Average.Medicare.Payments)
+med_cost
+```
+
+*add a new variable for total charges of each provider*
+```{r}
+med_cost <- mutate(med_cost, Total.Payments = Average.Total.Payments * Total.Discharges)
+med_cost
+```
+
+#the average total payment by states plot
+```{r}
+by_state <- med_cost %>% 
+  group_by(Provider.State) %>% 
+  select(DRG.Definition, Provider.State, Total.Discharges, Total.Payments) %>%
+  summarise(
+    State.Total.Payment = sum(Total.Payments),
+    State.Total.Discharges = sum(Total.Discharges),
+    State.Average.Payment = State.Total.Payment/State.Total.Discharges 
+)
+by_state
+
+by_state_plot <- ggplot(data = by_state, aes(x = Provider.State, y = State.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="Provider's State", y = "Average Total Payment ($)", title= "Average Total Payment in Each State")
+by_state_plot
+
+```
+
+#the average total payment by regions plot
+```{r}
+#West: WA,OR,CA,NV,ID,UT,MT,WY,CO,AZ,NM,AK,HI
+med_cost_west <- filter(by_state, Provider.State == "WA"|Provider.State =="OR"|Provider.State =="CA"|Provider.State =="NV"|Provider.State =="ID"|Provider.State =="UT"|Provider.State =="MT"|Provider.State =="WY"|Provider.State =="CO"|Provider.State =="AZ"|Provider.State =="NM"|Provider.State =="AK"|Provider.State =="HI")
+med_cost_west <- mutate(med_cost_west, Region="West")
+west_average <- sum(med_cost_west$State.Total.Payment)/sum(med_cost_west$State.Total.Discharges)
+
+#Midwest: ND,SD,NE,KS,MN,IA,MO,WI,IL,IN,MI,OH
+med_cost_midwest <- filter(by_state, Provider.State == "ND"|Provider.State =="SD"|Provider.State =="NE"|Provider.State =="KS"|Provider.State =="MN"|Provider.State =="IA"|Provider.State =="MO"|Provider.State =="WI"|Provider.State =="IL"|Provider.State =="IN"|Provider.State =="MI"|Provider.State =="OH")
+med_cost_midwest <- mutate(med_cost_midwest, Region="Midwest")
+midwest_average <- sum(med_cost_midwest$State.Total.Payment)/sum(med_cost_midwest$State.Total.Discharges)
+
+#Northeast: NY,PA,NH,VT,ME,MA,RI,CT,NJ
+med_cost_northeast <- filter(by_state, Provider.State == "NY"|Provider.State =="PA"|Provider.State =="NH"|Provider.State =="VT"|Provider.State =="ME"|Provider.State =="MA"|Provider.State =="RI"|Provider.State =="CT"|Provider.State =="NJ")
+med_cost_northeast <- mutate(med_cost_northeast, Region="Northeast")
+northeast_average <- sum(med_cost_northeast$State.Total.Payment)/sum(med_cost_northeast$State.Total.Discharges)
+
+#South: OK,TX,AR,LA,MS,TN,KY,AL,WV,DE,MD,DC,VA,NC,SC,GA,FL
+med_cost_south <- filter(by_state, Provider.State == "OK"|Provider.State =="TX"|Provider.State =="AR"|Provider.State =="LA"|Provider.State =="MS"|Provider.State =="TN"|Provider.State =="KY"|Provider.State =="AL"|Provider.State =="WV"|Provider.State =="DE"|Provider.State =="MD"|Provider.State =="DC"|Provider.State =="VA"|Provider.State =="NC"|Provider.State =="SC"|Provider.State =="GA"|Provider.State =="FL")
+med_cost_south <- mutate(med_cost_south, Region="South")
+south_average <- sum(med_cost_south$State.Total.Payment)/sum(med_cost_south$State.Total.Discharges)
+
+#all regions
+Regions <- c("West", "Midwest", "Northeast", "South")
+Region.Average_Payment <- c(west_average, midwest_average, northeast_average, south_average)
+by_region <- data.frame(Regions, Region.Average_Payment)
+by_region
+
+by_region_plot <-ggplot(data = by_region, aes(x = Regions, y = Region.Average_Payment))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="Provider's Region", y = "Average Total Payment ($)", title= "Average Total Payment in Each Region") +
+  geom_text(aes(label=Region.Average_Payment),hjust=0.5, vjust=0.5)
+by_region_plot 
+```
+
+#the average total payment by DRG Definition (deseases) by states/ regions/country
+*by states*
+```{r}
+#WA
+disease_WA <- med_cost %>%
+  filter(Provider.State == "WA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    WA.Total.Payment = sum(Total.Payments),
+    WA.Total.Discharges = sum(Total.Discharges),
+    WA.Average.Payment = WA.Total.Payment/WA.Total.Discharges 
+  )
+disease_WA
+disease_WA_plot <- ggplot(data = disease_WA, aes(x = DRG.Definition, y = WA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in WA")
+disease_WA_plot
+
+#OR
+disease_OR <- med_cost %>%
+  filter(Provider.State == "OR") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    OR.Total.Payment = sum(Total.Payments),
+    OR.Total.Discharges = sum(Total.Discharges),
+    OR.Average.Payment = OR.Total.Payment/OR.Total.Discharges 
+  )
+disease_OR
+disease_OR_plot <- ggplot(data = disease_OR, aes(x = DRG.Definition, y = OR.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in OR")
+disease_OR_plot
+
+#CA
+disease_CA <- med_cost %>%
+  filter(Provider.State == "CA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    CA.Total.Payment = sum(Total.Payments),
+    CA.Total.Discharges = sum(Total.Discharges),
+    CA.Average.Payment = CA.Total.Payment/CA.Total.Discharges 
+  )
+disease_CA
+disease_CA_plot <- ggplot(data = disease_CA, aes(x = DRG.Definition, y = CA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in CA")
+disease_CA_plot
+
+#NV
+disease_NV <- med_cost %>%
+  filter(Provider.State == "NV") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NV.Total.Payment = sum(Total.Payments),
+    NV.Total.Discharges = sum(Total.Discharges),
+    NV.Average.Payment = NV.Total.Payment/NV.Total.Discharges 
+  )
+disease_NV
+disease_NV_plot <- ggplot(data = disease_NV, aes(x = DRG.Definition, y = NV.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NV")
+disease_NV_plot
+
+#ID
+disease_ID <- med_cost %>%
+  filter(Provider.State == "ID") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    ID.Total.Payment = sum(Total.Payments),
+    ID.Total.Discharges = sum(Total.Discharges),
+    ID.Average.Payment = ID.Total.Payment/ID.Total.Discharges
+    )
+disease_ID
+disease_ID_plot <- ggplot(data = disease_ID, aes(x = DRG.Definition, y = ID.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in ID")
+disease_ID_plot
+
+#UT
+disease_UT <- med_cost %>%
+  filter(Provider.State == "UT") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    UT.Total.Payment = sum(Total.Payments),
+    UT.Total.Discharges = sum(Total.Discharges),
+    UT.Average.Payment = UT.Total.Payment/UT.Total.Discharges
+    )
+disease_UT
+disease_UT_plot <- ggplot(data = disease_UT, aes(x = DRG.Definition, y = UT.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in UT")
+disease_UT_plot
+
+#MT
+disease_MT <- med_cost %>%
+  filter(Provider.State == "MT") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MT.Total.Payment = sum(Total.Payments),
+    MT.Total.Discharges = sum(Total.Discharges),
+    MT.Average.Payment = MT.Total.Payment/MT.Total.Discharges
+    )
+disease_MT
+disease_MT_plot <- ggplot(data = disease_MT, aes(x = DRG.Definition, y = MT.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MT")
+disease_MT_plot
+
+#WY
+disease_WY <- med_cost %>%
+  filter(Provider.State == "WY") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    WY.Total.Payment = sum(Total.Payments),
+    WY.Total.Discharges = sum(Total.Discharges),
+    WY.Average.Payment = WY.Total.Payment/WY.Total.Discharges
+    )
+disease_WY
+disease_WY_plot <- ggplot(data = disease_WY, aes(x = DRG.Definition, y = WY.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in WY")
+disease_WY_plot
+
+#CO
+disease_CO <- med_cost %>%
+  filter(Provider.State == "CO") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    CO.Total.Payment = sum(Total.Payments),
+    CO.Total.Discharges = sum(Total.Discharges),
+    CO.Average.Payment = CO.Total.Payment/CO.Total.Discharges
+    )
+disease_CO
+disease_CO_plot <- ggplot(data = disease_CO, aes(x = DRG.Definition, y = CO.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in CO")
+disease_CO_plot
+
+#AZ
+disease_AZ <- med_cost %>%
+  filter(Provider.State == "AZ") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    AZ.Total.Payment = sum(Total.Payments),
+    AZ.Total.Discharges = sum(Total.Discharges),
+    AZ.Average.Payment = AZ.Total.Payment/AZ.Total.Discharges
+    )
+disease_AZ
+disease_AZ_plot <- ggplot(data = disease_AZ, aes(x = DRG.Definition, y = AZ.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in AZ")
+disease_AZ_plot
+
+#NM
+disease_NM <- med_cost %>%
+  filter(Provider.State == "NM") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NM.Total.Payment = sum(Total.Payments),
+    NM.Total.Discharges = sum(Total.Discharges),
+    NM.Average.Payment = NM.Total.Payment/NM.Total.Discharges
+    )
+disease_NM
+disease_NM_plot <- ggplot(data = disease_NM, aes(x = DRG.Definition, y = NM.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NM")
+disease_NM_plot
+
+#AK
+disease_AK <- med_cost %>%
+  filter(Provider.State == "AK") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    AK.Total.Payment = sum(Total.Payments),
+    AK.Total.Discharges = sum(Total.Discharges),
+    AK.Average.Payment = AK.Total.Payment/AK.Total.Discharges
+    )
+disease_AK
+disease_AK_plot <- ggplot(data = disease_AK, aes(x = DRG.Definition, y = AK.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in AK")
+disease_AK_plot
+
+#HI
+disease_HI <- med_cost %>%
+  filter(Provider.State == "HI") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    HI.Total.Payment = sum(Total.Payments),
+    HI.Total.Discharges = sum(Total.Discharges),
+    HI.Average.Payment = HI.Total.Payment/HI.Total.Discharges
+    )
+disease_HI
+disease_HI_plot <- ggplot(data = disease_HI, aes(x = DRG.Definition, y = HI.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in HI")
+disease_HI_plot
+
+#ND
+disease_ND <- med_cost %>%
+  filter(Provider.State == "ND") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    ND.Total.Payment = sum(Total.Payments),
+    ND.Total.Discharges = sum(Total.Discharges),
+    ND.Average.Payment = ND.Total.Payment/ND.Total.Discharges
+    )
+disease_ND
+disease_ND_plot <- ggplot(data = disease_ND, aes(x = DRG.Definition, y = ND.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in ND")
+disease_ND_plot
+
+#SD
+disease_SD <- med_cost %>%
+  filter(Provider.State == "SD") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    SD.Total.Payment = sum(Total.Payments),
+    SD.Total.Discharges = sum(Total.Discharges),
+    SD.Average.Payment = SD.Total.Payment/SD.Total.Discharges
+    )
+disease_SD
+disease_SD_plot <- ggplot(data = disease_SD, aes(x = DRG.Definition, y = SD.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in SD")
+disease_SD_plot
+
+#NE
+disease_NE <- med_cost %>%
+  filter(Provider.State == "NE") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NE.Total.Payment = sum(Total.Payments),
+    NE.Total.Discharges = sum(Total.Discharges),
+    NE.Average.Payment = NE.Total.Payment/NE.Total.Discharges
+    )
+disease_NE
+disease_NE_plot <- ggplot(data = disease_NE, aes(x = DRG.Definition, y = NE.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NE")
+disease_NE_plot
+
+#KS
+disease_KS <- med_cost %>%
+  filter(Provider.State == "KS") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    KS.Total.Payment = sum(Total.Payments),
+    KS.Total.Discharges = sum(Total.Discharges),
+    KS.Average.Payment = KS.Total.Payment/KS.Total.Discharges
+    )
+disease_KS
+disease_KS_plot <- ggplot(data = disease_KS, aes(x = DRG.Definition, y = KS.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in KS")
+disease_KS_plot
+
+#MN
+disease_MN <- med_cost %>%
+  filter(Provider.State == "MN") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MN.Total.Payment = sum(Total.Payments),
+    MN.Total.Discharges = sum(Total.Discharges),
+    MN.Average.Payment = MN.Total.Payment/MN.Total.Discharges
+    )
+disease_MN
+disease_MN_plot <- ggplot(data = disease_MN, aes(x = DRG.Definition, y = MN.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MN")
+disease_MN_plot
+
+#IA
+disease_IA <- med_cost %>%
+  filter(Provider.State == "IA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    IA.Total.Payment = sum(Total.Payments),
+    IA.Total.Discharges = sum(Total.Discharges),
+    IA.Average.Payment = IA.Total.Payment/IA.Total.Discharges
+    )
+disease_IA
+disease_IA_plot <- ggplot(data = disease_IA, aes(x = DRG.Definition, y = IA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in IA")
+disease_IA_plot
+
+#MO
+disease_MO <- med_cost %>%
+  filter(Provider.State == "MO") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MO.Total.Payment = sum(Total.Payments),
+    MO.Total.Discharges = sum(Total.Discharges),
+    MO.Average.Payment = MO.Total.Payment/MO.Total.Discharges
+    )
+disease_MO
+disease_MO_plot <- ggplot(data = disease_MO, aes(x = DRG.Definition, y = MO.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MO")
+disease_MO_plot
+
+#WI
+disease_WI <- med_cost %>%
+  filter(Provider.State == "WI") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    WI.Total.Payment = sum(Total.Payments),
+    WI.Total.Discharges = sum(Total.Discharges),
+    WI.Average.Payment = WI.Total.Payment/WI.Total.Discharges
+    )
+disease_WI
+disease_WI_plot <- ggplot(data = disease_WI, aes(x = DRG.Definition, y = WI.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in WI")
+disease_WI_plot
+
+#IL
+disease_IL <- med_cost %>%
+  filter(Provider.State == "IL") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    IL.Total.Payment = sum(Total.Payments),
+    IL.Total.Discharges = sum(Total.Discharges),
+    IL.Average.Payment = IL.Total.Payment/IL.Total.Discharges
+    )
+disease_IL
+disease_IL_plot <- ggplot(data = disease_IL, aes(x = DRG.Definition, y = IL.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in IL")
+disease_IL_plot
+
+#IN
+disease_IN <- med_cost %>%
+  filter(Provider.State == "IN") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    IN.Total.Payment = sum(Total.Payments),
+    IN.Total.Discharges = sum(Total.Discharges),
+    IN.Average.Payment = IN.Total.Payment/IN.Total.Discharges
+    )
+disease_IN
+disease_IN_plot <- ggplot(data = disease_IN, aes(x = DRG.Definition, y = IN.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in IN")
+disease_IN_plot
+
+#MI
+disease_MI <- med_cost %>%
+  filter(Provider.State == "MI") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MI.Total.Payment = sum(Total.Payments),
+    MI.Total.Discharges = sum(Total.Discharges),
+    MI.Average.Payment = MI.Total.Payment/MI.Total.Discharges
+    )
+disease_MI
+disease_MI_plot <- ggplot(data = disease_MI, aes(x = DRG.Definition, y = MI.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MI")
+disease_MI_plot
+#OH
+disease_OH <- med_cost %>%
+  filter(Provider.State == "OH") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    OH.Total.Payment = sum(Total.Payments),
+    OH.Total.Discharges = sum(Total.Discharges),
+    OH.Average.Payment = OH.Total.Payment/OH.Total.Discharges
+    )
+disease_OH
+disease_OH_plot <- ggplot(data = disease_OH, aes(x = DRG.Definition, y = OH.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in OH")
+disease_OH_plot
+
+#NY
+disease_NY <- med_cost %>%
+  filter(Provider.State == "NY") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NY.Total.Payment = sum(Total.Payments),
+    NY.Total.Discharges = sum(Total.Discharges),
+    NY.Average.Payment = NY.Total.Payment/NY.Total.Discharges
+    )
+disease_NY
+disease_NY_plot <- ggplot(data = disease_NY, aes(x = DRG.Definition, y = NY.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NY")
+disease_NY_plot
+
+#PA
+disease_PA <- med_cost %>%
+  filter(Provider.State == "PA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    PA.Total.Payment = sum(Total.Payments),
+    PA.Total.Discharges = sum(Total.Discharges),
+    PA.Average.Payment = PA.Total.Payment/PA.Total.Discharges
+    )
+disease_PA
+disease_PA_plot <- ggplot(data = disease_PA, aes(x = DRG.Definition, y = PA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in PA")
+disease_PA_plot
+
+#NH
+disease_NH <- med_cost %>%
+  filter(Provider.State == "NH") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NH.Total.Payment = sum(Total.Payments),
+    NH.Total.Discharges = sum(Total.Discharges),
+    NH.Average.Payment = NH.Total.Payment/NH.Total.Discharges
+    )
+disease_NH
+disease_NH_plot <- ggplot(data = disease_NH, aes(x = DRG.Definition, y = NH.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NH")
+disease_NH_plot
+
+#VT
+disease_VT <- med_cost %>%
+  filter(Provider.State == "VT") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    VT.Total.Payment = sum(Total.Payments),
+    VT.Total.Discharges = sum(Total.Discharges),
+    VT.Average.Payment = VT.Total.Payment/VT.Total.Discharges
+    )
+disease_VT
+disease_VT_plot <- ggplot(data = disease_VT, aes(x = DRG.Definition, y = VT.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in VT")
+disease_VT_plot
+
+#ME
+disease_ME <- med_cost %>%
+  filter(Provider.State == "ME") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    ME.Total.Payment = sum(Total.Payments),
+    ME.Total.Discharges = sum(Total.Discharges),
+    ME.Average.Payment = ME.Total.Payment/ME.Total.Discharges
+    )
+disease_ME
+disease_ME_plot <- ggplot(data = disease_ME, aes(x = DRG.Definition, y = ME.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in ME")
+disease_ME_plot
+
+#MA
+disease_MA <- med_cost %>%
+  filter(Provider.State == "MA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MA.Total.Payment = sum(Total.Payments),
+    MA.Total.Discharges = sum(Total.Discharges),
+    MA.Average.Payment = MA.Total.Payment/MA.Total.Discharges
+    )
+disease_MA
+disease_MA_plot <- ggplot(data = disease_MA, aes(x = DRG.Definition, y = MA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MA")
+disease_MA_plot
+
+#RI
+disease_RI <- med_cost %>%
+  filter(Provider.State == "RI") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    RI.Total.Payment = sum(Total.Payments),
+    RI.Total.Discharges = sum(Total.Discharges),
+    RI.Average.Payment = RI.Total.Payment/RI.Total.Discharges
+    )
+disease_RI
+disease_RI_plot <- ggplot(data = disease_RI, aes(x = DRG.Definition, y = RI.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in RI")
+disease_RI_plot
+
+#CT
+disease_CT <- med_cost %>%
+  filter(Provider.State == "CT") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    CT.Total.Payment = sum(Total.Payments),
+    CT.Total.Discharges = sum(Total.Discharges),
+    CT.Average.Payment = CT.Total.Payment/CT.Total.Discharges
+    )
+disease_CT
+disease_CT_plot <- ggplot(data = disease_CT, aes(x = DRG.Definition, y = CT.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in CT")
+disease_CT_plot
+
+#NJ
+disease_NJ <- med_cost %>%
+  filter(Provider.State == "NJ") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NJ.Total.Payment = sum(Total.Payments),
+    NJ.Total.Discharges = sum(Total.Discharges),
+    NJ.Average.Payment = NJ.Total.Payment/NJ.Total.Discharges
+    )
+disease_NJ
+disease_NJ_plot <- ggplot(data = disease_NJ, aes(x = DRG.Definition, y = NJ.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NJ")
+disease_NJ_plot
+
+#OK
+disease_OK <- med_cost %>%
+  filter(Provider.State == "OK") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    OK.Total.Payment = sum(Total.Payments),
+    OK.Total.Discharges = sum(Total.Discharges),
+    OK.Average.Payment = OK.Total.Payment/OK.Total.Discharges
+    )
+disease_OK
+disease_OK_plot <- ggplot(data = disease_OK, aes(x = DRG.Definition, y = OK.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in OK")
+disease_OK_plot
+
+#TX
+disease_TX <- med_cost %>%
+  filter(Provider.State == "TX") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    TX.Total.Payment = sum(Total.Payments),
+    TX.Total.Discharges = sum(Total.Discharges),
+    TX.Average.Payment = TX.Total.Payment/TX.Total.Discharges
+    )
+disease_TX
+disease_TX_plot <- ggplot(data = disease_TX, aes(x = DRG.Definition, y = TX.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in TX")
+disease_TX_plot
+
+#AR
+disease_AR <- med_cost %>%
+  filter(Provider.State == "AR") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    AR.Total.Payment = sum(Total.Payments),
+    AR.Total.Discharges = sum(Total.Discharges),
+    AR.Average.Payment = AR.Total.Payment/AR.Total.Discharges
+    )
+disease_AR
+disease_AR_plot <- ggplot(data = disease_AR, aes(x = DRG.Definition, y = AR.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in AR")
+disease_AR_plot
+
+#LA
+disease_LA <- med_cost %>%
+  filter(Provider.State == "LA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    LA.Total.Payment = sum(Total.Payments),
+    LA.Total.Discharges = sum(Total.Discharges),
+    LA.Average.Payment = LA.Total.Payment/LA.Total.Discharges
+    )
+disease_LA
+disease_LA_plot <- ggplot(data = disease_LA, aes(x = DRG.Definition, y = LA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in LA")
+disease_LA_plot
+
+#MS
+disease_MS <- med_cost %>%
+  filter(Provider.State == "MS") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MS.Total.Payment = sum(Total.Payments),
+    MS.Total.Discharges = sum(Total.Discharges),
+    MS.Average.Payment = MS.Total.Payment/MS.Total.Discharges
+    )
+disease_MS
+disease_MS_plot <- ggplot(data = disease_MS, aes(x = DRG.Definition, y = MS.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MS")
+disease_MS_plot
+
+#TN
+disease_TN <- med_cost %>%
+  filter(Provider.State == "TN") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    TN.Total.Payment = sum(Total.Payments),
+    TN.Total.Discharges = sum(Total.Discharges),
+    TN.Average.Payment = TN.Total.Payment/TN.Total.Discharges
+    )
+disease_TN
+disease_TN_plot <- ggplot(data = disease_TN, aes(x = DRG.Definition, y = TN.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in TN")
+disease_TN_plot
+
+#KY
+disease_KY <- med_cost %>%
+  filter(Provider.State == "KY") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    KY.Total.Payment = sum(Total.Payments),
+    KY.Total.Discharges = sum(Total.Discharges),
+    KY.Average.Payment = KY.Total.Payment/KY.Total.Discharges
+    )
+disease_KY
+disease_KY_plot <- ggplot(data = disease_KY, aes(x = DRG.Definition, y = KY.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in KY")
+disease_KY_plot
+
+#AL
+disease_AL <- med_cost %>%
+  filter(Provider.State == "AL") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    AL.Total.Payment = sum(Total.Payments),
+    AL.Total.Discharges = sum(Total.Discharges),
+    AL.Average.Payment = AL.Total.Payment/AL.Total.Discharges
+    )
+disease_AL
+disease_AL_plot <- ggplot(data = disease_AL, aes(x = DRG.Definition, y = AL.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in AL")
+disease_AL_plot
+
+#WV
+disease_WV <- med_cost %>%
+  filter(Provider.State == "WV") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    WV.Total.Payment = sum(Total.Payments),
+    WV.Total.Discharges = sum(Total.Discharges),
+    WV.Average.Payment = WV.Total.Payment/WV.Total.Discharges
+    )
+disease_WV
+disease_WV_plot <- ggplot(data = disease_WV, aes(x = DRG.Definition, y = WV.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in WV")
+disease_WV_plot
+
+#DE
+disease_DE <- med_cost %>%
+  filter(Provider.State == "DE") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    DE.Total.Payment = sum(Total.Payments),
+    DE.Total.Discharges = sum(Total.Discharges),
+    DE.Average.Payment = DE.Total.Payment/DE.Total.Discharges
+    )
+disease_DE
+disease_DE_plot <- ggplot(data = disease_DE, aes(x = DRG.Definition, y = DE.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in DE")
+disease_DE_plot
+
+#MD
+disease_MD <- med_cost %>%
+  filter(Provider.State == "MD") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    MD.Total.Payment = sum(Total.Payments),
+    MD.Total.Discharges = sum(Total.Discharges),
+    MD.Average.Payment = MD.Total.Payment/MD.Total.Discharges
+    )
+disease_MD
+disease_MD_plot <- ggplot(data = disease_MD, aes(x = DRG.Definition, y = MD.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in MD")
+disease_MD_plot
+
+#DC
+disease_DC <- med_cost %>%
+  filter(Provider.State == "DC") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    DC.Total.Payment = sum(Total.Payments),
+    DC.Total.Discharges = sum(Total.Discharges),
+    DC.Average.Payment = DC.Total.Payment/DC.Total.Discharges
+    )
+disease_DC
+disease_DC_plot <- ggplot(data = disease_DC, aes(x = DRG.Definition, y = DC.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in DC")
+disease_DC_plot
+
+#VA
+disease_VA <- med_cost %>%
+  filter(Provider.State == "VA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    VA.Total.Payment = sum(Total.Payments),
+    VA.Total.Discharges = sum(Total.Discharges),
+    VA.Average.Payment = VA.Total.Payment/VA.Total.Discharges
+    )
+disease_VA
+disease_VA_plot <- ggplot(data = disease_VA, aes(x = DRG.Definition, y = VA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in VA")
+disease_VA_plot
+
+#NC
+disease_NC <- med_cost %>%
+  filter(Provider.State == "NC") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    NC.Total.Payment = sum(Total.Payments),
+    NC.Total.Discharges = sum(Total.Discharges),
+    NC.Average.Payment = NC.Total.Payment/NC.Total.Discharges
+    )
+disease_NC
+disease_NC_plot <- ggplot(data = disease_NC, aes(x = DRG.Definition, y = NC.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in NC")
+disease_NC_plot
+
+#SC
+disease_SC <- med_cost %>%
+  filter(Provider.State == "SC") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    SC.Total.Payment = sum(Total.Payments),
+    SC.Total.Discharges = sum(Total.Discharges),
+    SC.Average.Payment = SC.Total.Payment/SC.Total.Discharges
+    )
+disease_SC
+disease_SC_plot <- ggplot(data = disease_SC, aes(x = DRG.Definition, y = SC.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in SC")
+disease_SC_plot
+
+#GA
+disease_GA <- med_cost %>%
+  filter(Provider.State == "GA") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    GA.Total.Payment = sum(Total.Payments),
+    GA.Total.Discharges = sum(Total.Discharges),
+    GA.Average.Payment = GA.Total.Payment/GA.Total.Discharges
+    )
+disease_GA
+disease_GA_plot <- ggplot(data = disease_GA, aes(x = DRG.Definition, y = GA.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in GA")
+disease_GA_plot
+
+#FL
+disease_FL <- med_cost %>%
+  filter(Provider.State == "FL") %>%
+  group_by(DRG.Definition) %>%
+  summarise(
+    FL.Total.Payment = sum(Total.Payments),
+    FL.Total.Discharges = sum(Total.Discharges),
+    FL.Average.Payment = FL.Total.Payment/FL.Total.Discharges
+    )
+disease_FL
+disease_FL_plot <- ggplot(data = disease_FL, aes(x = DRG.Definition, y = FL.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags in FL")
+disease_FL_plot
+```
+
+*by regions*
+```{r}
+#West: WA,OR,CA,NV,ID,UT,MT,WY,CO,AZ,NM,AK,HI
+desease_cost_west <- filter(med_cost, Provider.State == "WA"|Provider.State =="OR"|Provider.State =="CA"|Provider.State =="NV"|Provider.State =="ID"|Provider.State =="UT"|Provider.State =="MT"|Provider.State =="WY"|Provider.State =="CO"|Provider.State =="AZ"|Provider.State =="NM"|Provider.State =="AK"|Provider.State =="HI")
+desease_cost_west <- mutate(desease_cost_west, Region="West")
+desease_cost_west <- desease_cost_west %>%
+  group_by(DRG.Definition)  %>%
+  summarise(
+    West.Total.Payment = sum(Total.Payments),
+    West.Total.Discharges = sum(Total.Discharges),
+    West.Average.Payment = West.Total.Payment/West.Total.Discharges
+    )
+desease_cost_west
+
+desease_cost_west_plot <- ggplot(data = desease_cost_west, aes(x = DRG.Definition, y = West.Average.Payment))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG.Definition", y = "Average Total Payment ($)", title= "Average Total Payment in West")
+desease_cost_west_plot 
+
+#Midwest: ND,SD,NE,KS,MN,IA,MO,WI,IL,IN,MI,OH
+desease_cost_midwest <- filter(med_cost, Provider.State == "ND"|Provider.State =="SD"|Provider.State =="NE"|Provider.State =="KS"|Provider.State =="MN"|Provider.State =="IA"|Provider.State =="MO"|Provider.State =="WI"|Provider.State =="IL"|Provider.State =="IN"|Provider.State =="MI"|Provider.State =="OH")
+desease_cost_midwest <- mutate(desease_cost_midwest, Region="Midwest")
+desease_cost_midwest <- desease_cost_midwest %>%
+  group_by(DRG.Definition)  %>%
+  summarise(
+    Midwest.Total.Payment = sum(Total.Payments),
+    Midwest.Total.Discharges = sum(Total.Discharges),
+    Midwest.Average.Payment = Midwest.Total.Payment/Midwest.Total.Discharges)
+desease_cost_midwest
+
+desease_cost_midwest_plot <- ggplot(data = desease_cost_midwest, aes(x = DRG.Definition, y = Midwest.Average.Payment))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG.Definition", y = "Average Total Payment ($)", title= "Average Total Payment in Midest")
+desease_cost_midwest_plot 
+
+#Northeast: NY,PA,NH,VT,ME,MA,RI,CT,NJ
+desease_cost_northeast <- filter(med_cost, Provider.State == "NY"|Provider.State =="PA"|Provider.State =="NH"|Provider.State =="VT"|Provider.State =="ME"|Provider.State =="MA"|Provider.State =="RI"|Provider.State =="CT"|Provider.State =="NJ")
+desease_cost_northeast <- mutate(desease_cost_northeast, Region="Northeast")
+desease_cost_northeast <- desease_cost_northeast %>%
+  group_by(DRG.Definition)  %>%
+  summarise( 
+    Northeast.Total.Payment = sum(Total.Payments),
+    Northeast.Total.Discharges = sum(Total.Discharges),
+    Northeast.Average.Payment = Northeast.Total.Payment/Northeast.Total.Discharges)
+desease_cost_northeast
+
+desease_cost_northeast_plot <- ggplot(data = desease_cost_northeast, aes(x = DRG.Definition, y = Northeast.Average.Payment))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG.Definition", y = "Average Total Payment ($)", title= "Average Total Payment in Northeast")
+desease_cost_northeast_plot 
+
+#South: OK,TX,AR,LA,MS,TN,KY,AL,WV,DE,MD,DC,VA,NC,SC,GA,FL
+desease_cost_south <- filter(med_cost, Provider.State == "OK"|Provider.State =="TX"|Provider.State =="AR"|Provider.State =="LA"|Provider.State =="MS"|Provider.State =="TN"|Provider.State =="KY"|Provider.State =="AL"|Provider.State =="WV"|Provider.State =="DE"|Provider.State =="MD"|Provider.State =="DC"|Provider.State =="VA"|Provider.State =="NC"|Provider.State =="SC"|Provider.State =="GA"|Provider.State =="FL")
+desease_cost_south <- mutate(desease_cost_south, Region="South")
+desease_cost_south <- desease_cost_south %>%
+  group_by(DRG.Definition)  %>%
+  summarise( 
+    South.Total.Payment = sum(Total.Payments),
+    South.Total.Discharges = sum(Total.Discharges),
+    South.Average.Payment = South.Total.Payment/South.Total.Discharges)
+desease_cost_south
+
+desease_cost_south_plot <- ggplot(data = desease_cost_south, aes(x = DRG.Definition, y = South.Average.Payment))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG.Definition", y = "Average Total Payment ($)", title= "Average Total Payment in South")
+desease_cost_south_plot 
+
+#all regions
+x  <- desease_cost_west$DRG.Definition
+y1 <- desease_cost_west$West.Average.Payment
+y2 <- desease_cost_midwest$Midwest.Average.Payment
+y3 <- desease_cost_northeast$Northeast.Average.Payment
+y4 <- desease_cost_south$South.Average.Payment
+df <- data.frame(x, y1, y2, y3, y4)
+
+all_region <- ggplot(df, aes(x,group = 1)) + 
+  geom_line(aes(y=y1), colour="gold") +  
+  geom_line(aes(y=y2), colour="green") +
+  geom_line(aes(y=y3), colour="cyan") +
+  geom_line(aes(y=y4), colour="pink") +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  scale_colour_manual("bottom", breaks = c("West","Midwest","Northeast","South"), values = c("gold","green","cyan","pink"))+
+  ylab("Average.Payment ($)") + 
+  xlab("DRG.Definition")
+
+all_region
+```
+
+*in the whole country*
+```{r}
+desease_country <- med_cost %>% 
+  group_by(DRG.Definition) %>% 
+  select(DRG.Definition, Total.Discharges, Total.Payments) %>%
+  summarise(
+    Country.Total.Payment = sum(Total.Payments),
+    Country.Total.Discharges = sum(Total.Discharges),
+    Country.Average.Payment = Country.Total.Payment/Country.Total.Discharges 
+)
+desease_country
+
+desease_country_plot <- ggplot(data = desease_country, aes(x = DRG.Definition, y = Country.Average.Payment)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 180, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="DRG Definition", y = "Average Total Payment ($)", title= "Average Total Payment in different drags across the country")
+desease_country_plot 
+```
+
+
+#Relationship between Average Covered Charges and Average Total Payments across states/regions/country
+*by states*
+```{r}
+med_cost <- mutate(med_cost, Total_Covered_Charges = Average.Covered.Charges * Total.Discharges)
+
+Covered_By_State <- med_cost %>% 
+  group_by(Provider.State) %>% 
+  select(Provider.State, Total.Discharges, Total.Payments, Total_Covered_Charges) %>%
+  summarise(
+    State.Total.Covered = sum(Total_Covered_Charges),
+    State.Total.Discharges = sum(Total.Discharges),
+    State.Average.Covered = State.Total.Covered/State.Total.Discharges,
+    State.Total.Payment = sum(Total.Payments),
+    State.Average.Payment = State.Total.Payment/State.Total.Discharges, 
+    State.Average.Total.Charges = State.Average.Covered + State.Average.Payment,
+    State.Covered.Ratio = State.Average.Covered / State.Average.Total.Charges 
+)
+Covered_By_State
+
+Covered_By_State_Plot <- ggplot(data = Covered_By_State, aes(x = Provider.State, y = State.Covered.Ratio)) +
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="Provider's State", y = "Average Covered Charges VS Total Charges (%)", title= "Percentage of Average Covered Charges of Total Medicare Charges in Each State")
+Covered_By_State_Plot
+```
+
+*by regions*
+```{r}
+#West: WA,OR,CA,NV,ID,UT,MT,WY,CO,AZ,NM,AK,HI
+Covered_West <- filter(Covered_By_State, Provider.State == "WA"|Provider.State =="OR"|Provider.State =="CA"|Provider.State =="NV"|Provider.State =="ID"|Provider.State =="UT"|Provider.State =="MT"|Provider.State =="WY"|Provider.State =="CO"|Provider.State =="AZ"|Provider.State =="NM"|Provider.State =="AK"|Provider.State =="HI")
+Covered_West <- mutate(Covered_West, Region="West")
+Average_Covered_West = sum(Covered_West$State.Total.Covered)/sum(Covered_West$State.Total.Discharges)
+Total_Charges_West = Average_Covered_West + west_average
+Covered_West_Ratio = Average_Covered_West/Total_Charges_West
+Covered_West_Ratio
+
+#Midwest: ND,SD,NE,KS,MN,IA,MO,WI,IL,IN,MI,OH
+Covered_Midwest <- filter(Covered_By_State, Provider.State == "ND"|Provider.State =="SD"|Provider.State =="NE"|Provider.State =="KS"|Provider.State =="MN"|Provider.State =="IA"|Provider.State =="MO"|Provider.State =="WI"|Provider.State =="IL"|Provider.State =="IN"|Provider.State =="MI"|Provider.State =="OH")
+Covered_Midwest <- mutate(Covered_Midwest, Region="Midwest")
+Average_Covered_Midwest = sum(Covered_Midwest$State.Total.Covered)/sum(Covered_Midwest$State.Total.Discharges)
+Total_Charges_Midwest = Average_Covered_Midwest + midwest_average
+Covered_Midwest_Ratio = Average_Covered_Midwest/Total_Charges_Midwest
+Covered_Midwest_Ratio
+
+#Northeast: NY,PA,NH,VT,ME,MA,RI,CT,NJ
+Covered_Northeast <- filter(Covered_By_State, Provider.State == "NY"|Provider.State =="PA"|Provider.State =="NH"|Provider.State =="VT"|Provider.State =="ME"|Provider.State =="MA"|Provider.State =="RI"|Provider.State =="CT"|Provider.State =="NJ")
+Covered_Northeast <- mutate(Covered_Northeast, Region="Northeast")
+Average_Covered_Northeast = sum(Covered_Northeast$State.Total.Covered)/sum(Covered_Northeast$State.Total.Discharges)
+Total_Charges_Northeast = Average_Covered_Northeast + northeast_average
+Covered_Northeast_Ratio = Average_Covered_Northeast/Total_Charges_Northeast
+Covered_Northeast_Ratio
+
+#South: OK,TX,AR,LA,MS,TN,KY,AL,WV,DE,MD,DC,VA,NC,SC,GA,FL
+Covered_South <- filter(Covered_By_State, Provider.State == "OK"|Provider.State =="TX"|Provider.State =="AR"|Provider.State =="LA"|Provider.State =="MS"|Provider.State =="TN"|Provider.State =="KY"|Provider.State =="AL"|Provider.State =="WV"|Provider.State =="DE"|Provider.State =="MD"|Provider.State =="DC"|Provider.State =="VA"|Provider.State =="NC"|Provider.State =="SC"|Provider.State =="GA"|Provider.State =="FL")
+Covered_South  <- mutate(Covered_South , Region="South")
+Average_Covered_South = sum(Covered_South$State.Total.Covered)/sum(Covered_South$State.Total.Discharges)
+Total_Charges_South = Average_Covered_South + south_average
+Covered_South_Ratio = Average_Covered_South/Total_Charges_South
+Covered_South_Ratio
+
+#all regions
+Regions <- c("West", "Midwest", "Northeast", "South")
+Region.Covered_Ratio <- c(Covered_West_Ratio, Covered_Midwest_Ratio, Covered_Northeast_Ratio, Covered_South_Ratio)
+Covered_By_Region <- data.frame(Regions, Region.Covered_Ratio)
+Covered_By_Region 
+
+Covered_By_Region_Plot <- ggplot(data = Covered_By_Region, aes(x = Regions, y = Region.Covered_Ratio))+
+  theme(panel.grid =element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+
+  geom_point(size = 1) +
+  geom_line(group = 2) +
+  labs(x="Provider's Region", y = "Average Covered Charges VS Total Charges (%)", title= "Percentage of Average Covered Charges of Total Medicare Charges in Each Region")+
+  geom_text(aes(label=Region.Covered_Ratio),hjust=0.5, vjust=0.5)
+Covered_By_Region_Plot
+```
+
+*in the whole country*
+```{r}
+Total_Covered_Charges_Country  = sum(med_cost$Total_Covered_Charges)
+Total_Discharges_Country = sum(med_cost$Total.Discharges)
+Average_Covered_Charges_Country = Total_Covered_Charges_Country / Total_Discharges_Country
+
+Total_Payments_Country  = sum(med_cost$Total.Payments)
+Average_Total_Payment_Country = Total_Payments_Country / Total_Discharges_Country
+
+Average_Charges_Country =Average_Covered_Charges_Country +Average_Total_Payment_Country
+
+Covered_Ratio_Country = Average_Covered_Charges_Country / Average_Charges_Country
+Covered_Ratio_Country 
+```
+

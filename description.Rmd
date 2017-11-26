@@ -1,0 +1,135 @@
+---
+title: "**Final Project**"
+author: "Robin Cunningham"
+output:
+  html_document:
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+---
+
+You final project is to do a novel data analysis to answer a question and write about it. This can be interpreted broadly and the requirements are discussed below. 
+
+The rough outline of the project is: Start with a question. Find data that might get at that question. Play around with the data. Attempt to answer the question. Iterate. Communicate.
+
+Your project should have one significant aspect to it. Examples might include,
+
+- put together a novel data set (e.g. scrape something from the web)
+- answer an interesting question
+- a "sophisticated" statistical (or machine learning) model
+- a really compelling visualization
+- write a [shiny app](https://shiny.rstudio.com/)
+
+You will work in groups of 3 people, assigned by the instructor. See below for grading details and the group work policies.
+
+# **Final deliverables**
+
+There are three Final Project deliverables: a blog post, your analysis code/data and your project book. The final project is due Thursday, December 7th at 11:00pm.
+
+## Blog post
+
+Write a blog post in R Markdown aimed at a general audience (think [538](https://fivethirtyeight.com/)).
+
+- should be 1000-1500 words
+- have at least two figures
+
+## Analysis code
+
+All analysis code should be well documented. The main technical results (plots, regressions, etc) should be written up in a well documented, supporting technical document (using R Markdown). You might also include R scripts for cleaning data or helper functions.
+
+Your data set (both raw and processed) should be submitted as well. All documents and files must be zipped into one directory for submission.
+
+## Process Book
+
+An important part of your project is your process book. Your process book details your steps in developing your solution, including how you collected the data, alternative solutions you tried, describing statistical methods you used, and the insights you got. Equally important to your final results is how you got there! Your process book is the place you describe and document the space of possibilities you explored at each step of your project. We strongly advise you to include many visualizations in your process book. Your process book should include the following topics. Depending on your project type, the amount of discussion you devote to each of them will vary:
+
+*Overview and Motivation:* Provide an overview of the project goals and the motivation for it. Consider that this will be read by people who did not see your project proposal.
+
+*Related Work:* Anything that inspired you, such as a paper, a web site, or something we discussed in class.
+
+*Initial Questions:* What questions are you trying to answer? How did these questions evolve over the course of the project? What new questions did you consider in the course of your analysis? - Data: Source, scraping method, cleanup, storage, etc.
+
+*Exploratory Data Analysis:* What visualizations did you use to look at your data in different ways? What are the different statistical methods you considered? Justify the decisions you made, and show any major changes to your ideas. How did you reach these conclusions?
+
+*Final Analysis:* What did you learn about the data? How did you answer the questions? How can you justify your answers?
+
+*Presentation:* Present your final results in a compelling and engaging way using text, visualizations, images, and videos on your project web site.
+
+Describe the storytelling elements and goals in your process notebook and show us sketches and screenshots of different web site iterations. As this will be your only chance to describe your project in detail make sure that your process book is a standalone document that fully describes your process and results.
+
+# **Where to find data?**
+
+You can find a large amount of data online. I encourage you to "gather your own data online" by doing something like [scraping Twitter](http://varianceexplained.org/r/trump-tweets/). Or you are feeling lazy, you can choose from some suggestions below.
+
+There are some obvious places to look like [data.gov](data.gov). I've put together a collection (of collections) of interesting datasets you can find online: [here](https://idc9.github.io/stor390/resources/dataset_collection.html). 
+
+If you are already doing reserach with a dataset you are welcome to use it, but you have to do something new for this final project. That is, the work you submit cannot be part of any other course.
+
+
+# **Grading**
+
+Your team's grade will be 50% blog post and 50% analysis code/project book. Your individual grade will be weighted by your team member's reviews.
+
+The project will be graded on
+
+- Communication
+    - Clear writing (both in the blog post and in the supporting technical document)
+    - Document code
+    
+- Accuracy
+    - Did you use reasonable statistics?
+    - Does your final code run?
+    - How well do your findings support your conclusions? The evidence is inconclusive" is a very possible, and completely acceptable answer. 
+
+- Ambition
+    - The project should take some creativity and effort i.e. should be more than a matter of copy/pasting code.    
+    
+- Groupwork
+    - You will anonomyously rate your team members and yourself on *team citizenship* (e.g. attends meetings, does what they promise, etc), *not* on ability. 
+    - Final grades will be adjusted based on peer ratings (see [Peer Ratings in Coorperative Learning Teams](http://www4.ncsu.edu/unity/lockers/users/f/felder/public/Papers/kaufman-asee.PDF)).
+        - Individual grades are based on the project grade and a multiple computed from the peer ratings. This multiplier will range from 1.05 (for people who go above and beyond) down to 0 (for people who don't participate).
+    - As a last resort you may fire a team member who refuses to participate. Please contact the instructor well before it comes to this.
+        - If you are fired you must start a new project and your peer rating multiplier will take a hit.
+        
+
+# **Examples for inspiration**
+
+These are some examples of interesting analyses. Many of these examples would take longer than you have for the final project.
+
+- Blog posts from [polygraph](https://pudding.cool/)
+
+- [David Robinson's text analysis of Trump tweets](http://varianceexplained.org/r/trump-tweets/)
+
+- [genre classification](http://josh-jacobson.github.io/genre-classification/)
+
+- [538 on how baby boomers get high](https://fivethirtyeight.com/datalab/how-baby-boomers-get-high/)
+
+- [538 on Bob Ross](https://fivethirtyeight.com/features/a-statistical-analysis-of-the-work-of-bob-ross/)
+
+
+# **Important Dates**
+
+- Initial project proposal: **due 11/6 at 11pm**
+    - Describe your proposed project (one page)
+        - What question(s) will you try to answer?
+        - What datasets will you use? You should have already found and taken a first look at the data set
+        - How will you use the data to try to answer the question?
+
+- Exploratory analysis: **due 11/18 at 11pm**
+    - Write up your initial findings in an R Markdown document.
+    - You should have at least K plots (still deciding K).
+
+- Data analysis/technical document: **due 12/1 at 11pm**
+    - Write up your technical results in an R Markdown document.
+    - Put all code, data, etc together.
+    - Write a "process book" describing your analysis process.
+
+- Blog post: **due 12/7 at 11pm**
+
+# **Getting Help/Consulting**
+
+Your primary source for help with finding, wrangling, analyzing and present data is our graduate consultant: Varun Goel. He will have office hours from 1:00-3:00 p.m. on Mondays and Wednesdays in Carolina Hall 317. See Sakai for contact information.
+
+Adam Waterbury, our IA for the course will also hold extra office hours on Tuesday and Thursday from 9:30-11:00. 
+
+If these times are not sufficient, we can talk about finding other times that work.

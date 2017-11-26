@@ -1,0 +1,16 @@
+---
+title: "Exploratory Analysis"
+author: "Trevor Levey"
+date: "11/14/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##EDA
+
+```{r}
+df <- read_csv("final_project_data.csv")
+```
